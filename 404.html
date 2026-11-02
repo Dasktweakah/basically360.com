@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Page Not Found · Basically360</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@200;600&family=Source+Sans+3:wght@400&display=swap">
+<style>
+:root { color-scheme: light; --shell: #eef1ee; --shell-deep: #d5dbd6; --ink: #1b221d; --ink-soft: #56625a; --green: #5dbb2f; --green-deep: #2d7a18; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; display: grid; place-items: center; text-align: center;
+  padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(900px 420px at 50% -80px, #fff 0%, rgba(255,255,255,0) 70%), linear-gradient(180deg, var(--shell), var(--shell-deep));
+  background-color: var(--shell); color: var(--ink); font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+.ring { width: 64px; height: 64px; margin: 0 auto 24px; border-radius: 50%;
+  background: radial-gradient(circle, var(--shell) 0 46%, transparent 47%),
+    conic-gradient(from -90deg, #b9c2bb 0 22%, transparent 22% 25%, #b9c2bb 25% 47%, transparent 47% 50%, #b9c2bb 50% 72%, transparent 72% 75%, #b9c2bb 75% 97%, transparent 97% 100%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+h1 { font-family: "Mulish", "Segoe UI", system-ui, sans-serif; font-weight: 200; font-size: clamp(2.25rem, 8vw, 3.5rem); margin: 0; letter-spacing: -.03em; }
+p { color: var(--ink-soft); font-size: 1.125rem; margin: 12px 0 28px; }
+a { display: inline-block; font-family: "Mulish", "Segoe UI", system-ui, sans-serif; font-weight: 600; color: #fff; text-decoration: none;
+  background: linear-gradient(160deg, #6fcf3c, var(--green-deep)); padding: 10px 22px; border-radius: 4px; }
+a:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="ring" aria-hidden="true"></div>
+  <h1>page not found</h1>
+  <p>There's nothing at this address on basically360.com.</p>
+  <a href="/">Back to home</a>
+</main>
+</body>
+</html>

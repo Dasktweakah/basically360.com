@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Basically360</title>
+<link rel="canonical" href="https://basically360.com/">
+<meta property="og:title" content="Basically360">
+<meta property="og:description" content="An Xbox 360-style dashboard for Windows PCs. Independent hobby project.">
+<meta property="og:url" content="https://basically360.com/">
+<meta property="og:type" content="website">
+<meta name="description" content="Basically360 is an Xbox 360-style dashboard for Windows PCs, built as an independent hobby project.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@200;300;400;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a 2010-era console dashboard. Pivot tabs across the top, a glossy "TV screen" hero,
+   sections laid out as tile rows. One deliberate light look (the console's gloss-white shell); every colour set explicitly. */
+:root {
+  color-scheme: light;
+  --shell: #eef1ee;          /* gloss-white console shell */
+  --shell-deep: #d5dbd6;     /* shadowed plastic */
+  --ink: #1b221d;            /* text */
+  --ink-soft: #56625a;       /* secondary text */
+  --green: #5dbb2f;          /* ring-of-light green */
+  --green-deep: #2d7a18;     /* tile green, readable under white text */
+  --graphite: #333a35;       /* dark tiles, screen bezel */
+  --white: #ffffff;
+  --line: rgba(27, 34, 29, .12);
+
+  --f-display: "Mulish", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --step--1: .8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.25rem, 1.4rem + 3.6vw, 3.75rem);
+  --step-4: clamp(2.75rem, 1.6rem + 5vw, 5rem);
+
+  --wrap: 1120px;
+  --lift: 0 18px 34px -16px rgba(20, 40, 20, .45);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  background:
+    radial-gradient(1200px 520px at 75% -120px, var(--white) 0%, rgba(255,255,255,0) 70%),
+    linear-gradient(180deg, var(--shell) 0%, var(--shell-deep) 100%);
+  background-color: var(--shell);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  min-height: 100%;
+}
+
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10;
+  background: var(--shell);
+}
+
+.band { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: var(--wrap); margin-inline: auto; }
+
+a { color: var(--green-deep); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+/* ---------- top bar ---------- */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: rgba(238, 241, 238, .86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top .wrap { display: flex; align-items: center; gap: 24px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+.brand b { font-family: var(--f-display); font-weight: 300; font-size: 1.5rem; letter-spacing: -.01em; }
+.brand b span { font-weight: 700; color: var(--green-deep); }
+
+/* ring of light: four quadrants, player one lit */
+.ring {
+  --s: 30px;
+  width: var(--s); height: var(--s); border-radius: 50%; flex: none;
+  background:
+    radial-gradient(circle at 50% 50%, var(--shell) 0 46%, transparent 47%),
+    conic-gradient(from -90deg,
+      var(--green) 0 22%, transparent 22% 25%,
+      #b9c2bb 25% 47%, transparent 47% 50%,
+      #b9c2bb 50% 72%, transparent 72% 75%,
+      #b9c2bb 75% 97%, transparent 97% 100%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 0 14px rgba(93,187,47,.45);
+}
+
+.pivots { display: flex; gap: 22px; margin-left: auto; list-style: none; padding: 0; margin-block: 0; flex-wrap: wrap; }
+.pivots a {
+  font-family: var(--f-display); font-weight: 300; font-size: 1.125rem;
+  color: var(--ink-soft); text-decoration: none; text-transform: lowercase;
+}
+.pivots a:hover { color: var(--ink); }
+
+/* ---------- hero ---------- */
+.hero .wrap {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 48px; align-items: center; padding-block: 56px 64px;
+}
+.eyebrow {
+  font-family: var(--f-mono); font-size: var(--step--1); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--green-deep);
+}
+.hero h1 { font-weight: 200; font-size: var(--step-4); line-height: 1; letter-spacing: -.035em; margin-top: 14px; text-transform: lowercase; }
+.hero h1 strong { font-weight: 700; color: var(--green-deep); }
+.hero .lede { font-size: var(--step-1); color: var(--ink-soft); margin-top: 20px; max-width: 34ch; line-height: 1.45; }
+.hero .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; list-style: none; padding: 0; }
+.hero .facts li {
+  font-family: var(--f-mono); font-size: var(--step--1);
+  background: var(--white); border: 1px solid var(--line);
+  padding: 4px 10px; border-radius: 999px; color: var(--ink);
+}
+
+/* the "TV": a mock of the dashboard's home pivot */
+.tv {
+  background: linear-gradient(180deg, #474e49, var(--graphite));
+  border-radius: 18px; padding: 14px; box-shadow: var(--lift), inset 0 1px 0 rgba(255,255,255,.18);
+  max-width: 100%;
+}
+.screen {
+  aspect-ratio: 16 / 9; max-width: 100%; border-radius: 6px; overflow: hidden; position: relative;
+  background:
+    radial-gradient(120% 90% at 70% 0%, #ffffff 0%, #e9ece9 45%, #c9d0ca 100%);
+  container-type: inline-size;
+  padding: 5cqw 6cqw 4cqw;
+  display: grid; grid-template-rows: auto auto 1fr auto; gap: 2.4cqw;
+}
+.screen .head { display: flex; justify-content: space-between; align-items: center; }
+.screen .tabs { display: flex; gap: 3.2cqw; font-family: var(--f-display); font-weight: 300; font-size: 4.2cqw; color: #7e8a82; text-transform: lowercase; white-space: nowrap; }
+.screen .tabs .on { color: var(--ink); font-weight: 400; }
+.screen .gt { display: flex; align-items: center; gap: 1.4cqw; font-family: var(--f-display); font-size: 2.3cqw; color: var(--ink); }
+.screen .gt i { width: 4.2cqw; height: 4.2cqw; border-radius: .6cqw; background: linear-gradient(135deg, var(--green), var(--green-deep)); display: block; }
+.screen .gt em { font-style: normal; color: var(--ink-soft); }
+.screen .row { display: grid; grid-template-columns: 2.1fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.4cqw; min-height: 0; }
+.screen .t {
+  border-radius: .5cqw; padding: 1.3cqw 1.5cqw; color: var(--white);
+  font-family: var(--f-display); font-size: 2.2cqw; text-transform: lowercase;
+  display: flex; align-items: flex-end; position: relative; overflow: hidden;
+  box-shadow: 0 .6cqw 1.4cqw -1cqw rgba(0,0,0,.5);
+}
+.screen .t::after { /* glass sheen */
+  content: ""; position: absolute; inset: 0 0 55% 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0));
+}
+.screen .big { grid-row: span 2; background: linear-gradient(160deg, #6fcf3c, var(--green-deep)); font-size: 3cqw; }
+.screen .big small { display: block; font-size: 1.8cqw; opacity: .85; }
+.screen .g2 { background: linear-gradient(160deg, #4b524d, #2a302c); }
+.screen .g3 { background: linear-gradient(160deg, #3f8fd0, #1d5f9c); }
+.screen .g4 { background: linear-gradient(160deg, #e0802b, #b2531a); }
+.screen .g5 { background: linear-gradient(160deg, #8a62c8, #5b3a96); }
+.screen .hintbar { display: flex; gap: 3cqw; font-family: var(--f-display); font-size: 2cqw; color: var(--ink-soft); }
+.screen .hintbar span { display: inline-flex; align-items: center; gap: .9cqw; }
+.btn { display: inline-grid; place-items: center; width: 2.9cqw; height: 2.9cqw; border-radius: 50%; color: var(--white); font-weight: 700; font-size: 1.7cqw; font-family: var(--f-body); }
+.btn.a { background: #3fa52a; } .btn.b { background: #d23b2b; }
+.tv .stand { height: 10px; width: 34%; margin: 12px auto 0; border-radius: 0 0 10px 10px; background: linear-gradient(180deg, #2a302c, #474e49); }
+
+/* ---------- sections ---------- */
+section { scroll-margin-top: 80px; }
+.sec .wrap { padding-block: 56px; border-top: 1px solid var(--line); }
+.sec-head { display: grid; gap: 10px; margin-bottom: 30px; max-width: 62ch; }
+.sec-head h2 { font-weight: 300; font-size: var(--step-3); letter-spacing: -.03em; line-height: 1.05; text-transform: lowercase; }
+.sec-head p { color: var(--ink-soft); }
+
+/* feature tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.tile {
+  position: relative; overflow: hidden; border-radius: 4px; padding: 20px 20px 22px;
+  background: var(--white); border: 1px solid var(--line);
+  display: grid; gap: 8px; align-content: start; min-width: 0;
+  transition: transform .18s ease-out, box-shadow .18s ease-out;
+}
+.tile:hover { transform: scale(1.03); box-shadow: var(--lift); z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+.tile h3 { font-weight: 600; font-size: var(--step-1); text-transform: lowercase; letter-spacing: -.01em; }
+.tile p { color: var(--ink-soft); font-size: 1rem; }
+.tile .tag { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--green-deep); }
+.tile.hero-tile { background: linear-gradient(160deg, #6fcf3c, var(--green-deep)); border-color: transparent; color: var(--white); }
+.tile.hero-tile p, .tile.hero-tile .tag { color: rgba(255,255,255,.9); }
+.tile.dark { background: linear-gradient(160deg, #4b524d, #262b28); border-color: transparent; color: var(--white); }
+.tile.dark p, .tile.dark .tag { color: rgba(255,255,255,.82); }
+@media (min-width: 760px) { .tile.wide { grid-column: span 2; } }
+
+/* how it works: real sequence, so numbered */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; counter-reset: s; }
+.steps li { counter-increment: s; background: rgba(255,255,255,.6); border: 1px solid var(--line); border-radius: 4px; padding: 18px 20px; display: grid; gap: 6px; min-width: 0; }
+.steps li::before { content: counter(s); font-family: var(--f-display); font-weight: 200; font-size: 2.6rem; line-height: 1; color: var(--green-deep); }
+.steps strong { font-family: var(--f-display); font-weight: 600; font-size: 1.125rem; }
+.steps p { color: var(--ink-soft); font-size: 1rem; }
+
+/* services table */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--white); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 1rem; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-soft); font-weight: 500; background: var(--shell); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #e3f1db; color: var(--green-deep); white-space: nowrap; }
+.pill.planned { background: #ececec; color: var(--ink-soft); }
+
+/* privacy */
+.privacy-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.policy { display: grid; gap: 18px; max-width: 65ch; }
+.policy h3 { font-weight: 600; font-size: 1.125rem; }
+.policy p, .policy li { color: var(--ink-soft); }
+.policy ul { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.summary-card { background: var(--graphite); color: var(--white); border-radius: 6px; padding: 24px; display: grid; gap: 14px; box-shadow: var(--lift); }
+.summary-card h3 { font-weight: 300; font-size: var(--step-2); text-transform: lowercase; }
+.summary-card dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 16px; }
+.summary-card dt { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: #a9d98f; padding-top: 3px; }
+.summary-card dd { margin: 0; font-size: 1rem; }
+
+/* footer */
+footer .wrap { padding-block: 36px 48px; border-top: 1px solid var(--line); display: grid; gap: 14px; }
+footer p { font-size: .9375rem; color: var(--ink-soft); max-width: 80ch; }
+footer .fine { font-family: var(--f-mono); font-size: .75rem; color: var(--ink-soft); }
+
+@media (max-width: 860px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-block: 36px 48px; }
+  .privacy-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .pivots { margin-left: 0; gap: 16px; width: 100%; }
+  .pivots a { font-size: 1rem; }
+  .top .wrap { gap: 8px; }
+}
+</style>
+
+</head>
+<body>
+<header class="top band">
+  <div class="wrap">
+    <a class="brand" href="#home" aria-label="Basically360 home">
+      <span class="ring" aria-hidden="true"></span>
+      <b>basically<span>360</span></b>
+    </a>
+    <nav aria-label="Sections">
+      <ul class="pivots">
+        <li><a href="#features">features</a></li>
+        <li><a href="#how">how it works</a></li>
+        <li><a href="#services">services</a></li>
+        <li><a href="#privacy">privacy</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="home">
+  <section class="hero band">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Windows dashboard · hobby project</p>
+        <h1>your PC, <strong>basically</strong> a 360.</h1>
+        <p class="lede">Basically360 is a full-screen, controller-first dashboard for Windows PCs, styled after the Xbox 360 dashboard. It brings every game you own into one place, and you can use all of it from the couch.</p>
+        <ul class="facts" aria-label="At a glance">
+          <li>Windows 10 &amp; 11 · 64-bit</li>
+          <li>Xbox controller</li>
+          <li>Runs on your PC</li>
+          <li>Free · not for sale</li>
+        </ul>
+      </div>
+
+      <figure class="tv" aria-label="Illustration of the Basically360 home screen" style="margin:0">
+        <div class="screen">
+          <div class="head">
+            <div class="tabs"><span>social</span><span class="on">home</span><span>games</span><span>apps</span></div>
+            <div class="gt"><i aria-hidden="true"></i><span>Player One <em>· 12,450 G</em></span></div>
+          </div>
+          <div></div>
+          <div class="row">
+            <div class="t big"><span>my games<small>1,284 hours played</small></span></div>
+            <div class="t g2">marketplace</div>
+            <div class="t g3">friends</div>
+            <div class="t g4">gamecube</div>
+            <div class="t g5">activity</div>
+          </div>
+          <div class="hintbar"><span><b class="btn a">A</b>Select</span><span><b class="btn b">B</b>Back</span></div>
+        </div>
+        <div class="stand" aria-hidden="true"></div>
+      </figure>
+    </div>
+  </section>
+
+  <section id="features" class="sec band">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">What it does</p>
+        <h2>everything on one dashboard</h2>
+        <p>Basically360 replaces the Windows desktop while you're playing. It looks and sounds like the 360's 2011 dashboard, and it launches games from all the places a modern PC keeps them.</p>
+      </div>
+      <div class="tiles">
+        <article class="tile hero-tile wide">
+          <span class="tag">Library</span>
+          <h3>my games</h3>
+          <p>Games from the Xbox app, Steam and EA in one list with box art, along with Xbox 360 games run through the Xenia emulator and GameCube games through Dolphin. Add-ons and downloadable content appear under their game.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Profile</span>
+          <h3>xbox live sign-in</h3>
+          <p>Sign in with a Microsoft account to show your gamertag, gamerpic, Gamerscore and achievements.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Social</span>
+          <h3>friends &amp; messages</h3>
+          <p>See which friends are online and read your messages, through Xbox and Discord.</p>
+        </article>
+        <article class="tile dark">
+          <span class="tag">Store</span>
+          <h3>games marketplace</h3>
+          <p>Browse top games, deals, new releases, demos and PC Game Pass, then buy in the Microsoft Store.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Feed</span>
+          <h3>activity alerts</h3>
+          <p>A feed of recent friend activity: achievements earned, games played and new messages.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Search</span>
+          <h3>one search</h3>
+          <p>Search your own games and apps, the Marketplace, YouTube and the web from one on-screen keyboard.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Guide</span>
+          <h3>guide button</h3>
+          <p>Press the guide button during any game to reach the dashboard, your friends or the power options.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Apps</span>
+          <h3>controller as mouse</h3>
+          <p>In Windows and in your apps, the controller works as a mouse. In games it goes back to being a controller.</p>
+        </article>
+        <article class="tile">
+          <span class="tag">Retro</span>
+          <h3>gamecube menu</h3>
+          <p>Boots the GameCube's own start-up menu, and the bumpers change discs.</p>
+        </article>
+        <article class="tile dark">
+          <span class="tag">Movies &amp; TV · planned</span>
+          <h3>browse films &amp; shows</h3>
+          <p>Coming soon: posters, details and trailers for films and TV, opened in the apps you already use.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="sec band">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">How it works</p>
+        <h2>from power button to playing</h2>
+        <p>Basically360 is one small Windows program with nothing to install around it. It doesn't run anything in the background once you close it.</p>
+      </div>
+      <ol class="steps">
+        <li><strong>Start it</strong><p>Basically360 opens full screen, plays its start-up sequence and lands on home.</p></li>
+        <li><strong>It finds your games</strong><p>It reads which games are installed for the Xbox app, Steam, EA, Xenia and Dolphin, then shows them with their covers.</p></li>
+        <li><strong>Sign in if you like</strong><p>Signing in to Xbox LIVE or Discord is optional. Each one opens that service's own sign-in page in your browser.</p></li>
+        <li><strong>Pick a game</strong><p>The game launches and Basically360 steps aside. The guide button brings it back.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="services" class="sec band">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Third-party services</p>
+        <h2>what it connects to, and why</h2>
+        <p>Basically360 talks directly to these services from your PC. It doesn't run a server of its own, so no requests pass through anything run by Basically360.</p>
+      </div>
+      <div class="table-scroll" role="region" aria-label="Services table" tabindex="0">
+        <table>
+          <thead>
+            <tr><th scope="col">Service</th><th scope="col">Used for</th><th scope="col">What is read</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Microsoft account / Xbox LIVE</td><td>Your profile, friends, achievements and activity</td><td>Gamertag, gamerpic, Gamerscore, friends list, achievements and played titles. Read only.</td><td><span class="pill">In use</span></td></tr>
+            <tr><td>Microsoft Store catalog</td><td>The Games Marketplace and Search</td><td>Public game listings: names, prices, images and ratings. No sign-in needed.</td><td><span class="pill">In use</span></td></tr>
+            <tr><td>Discord</td><td>Friends and messages</td><td>Your friends list, presence and direct messages, shown on screen only.</td><td><span class="pill">In use</span></td></tr>
+            <tr><td>The Movie Database (TMDB)</td><td>Movies &amp; TV browsing</td><td>Public film and show details: titles, posters, overviews and trailers. No personal data sent.</td><td><span class="pill planned">Planned</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="sec band">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Privacy</p>
+        <h2>your data stays on your PC</h2>
+      </div>
+      <div class="privacy-grid">
+        <div class="policy">
+          <div>
+            <h3>What Basically360 collects</h3>
+            <p>Nothing. It has no analytics, no ads, no tracking and no accounts of its own. It has no servers, so nothing you do in it is sent to the developer.</p>
+          </div>
+          <div>
+            <h3>What is stored, and where</h3>
+            <ul>
+              <li>Your settings, in a plain text file next to the program.</li>
+              <li>Sign-in tokens for Xbox LIVE and Discord, encrypted with Windows' own data protection so only your Windows account can read them.</li>
+              <li>Cached cover art and store details, so pages open quickly.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Signing in</h3>
+            <p>Basically360 never sees your password. Sign-in happens on the service's own page in your browser, and the service gives back a token that only allows what's listed under services. Signing out deletes the stored token.</p>
+          </div>
+          <div>
+            <h3>Removing it</h3>
+            <p>Delete the Basically360 folder and everything it stored is gone. You can also remove its access from your Microsoft or Discord account settings at any time.</p>
+          </div>
+        </div>
+        <aside class="summary-card" aria-label="Privacy summary">
+          <h3>at a glance</h3>
+          <dl>
+            <dt>Runs</dt><dd>On your own Windows PC</dd>
+            <dt>Servers</dt><dd>None</dd>
+            <dt>Analytics</dt><dd>None</dd>
+            <dt>Ads</dt><dd>None</dd>
+            <dt>Sign-ins</dt><dd>Optional, encrypted on your PC</dd>
+            <dt>Price</dt><dd>Free, personal use</dd>
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="band">
+  <div class="wrap">
+    <p>Basically360 is an independent, non-commercial hobby project. It isn't affiliated with, endorsed by or sponsored by Microsoft, Nintendo, Discord, Valve, Electronic Arts or The Movie Database. Xbox, Xbox 360 and Xbox LIVE are trademarks of Microsoft Corporation. GameCube is a trademark of Nintendo. All other names belong to their owners.</p>
+    <p>Movies &amp; TV information, once added, will come from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p class="fine">basically360.com · Basically360 for Windows · v1.72 · © 2026</p>
+  </div>
+</footer>
+</body>
+</html>
